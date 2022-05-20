@@ -1,0 +1,13 @@
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: red;
+  display: flex;
+  flex-direction: column;
+  color: white;
+}
+
+.base {
+  background: black;
+  flex: 1;
+}

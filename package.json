@@ -1,0 +1,18 @@
+{
+  "name": "ur2delo",
+  "version": "1.0.0",
+  "description": "Elo calculations for UR2D records",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "electron ."
+  },
+  "keywords": [
+    "elo"
+  ],
+  "author": "Urist",
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "electron": "^17.1.2"
+  }
+}
