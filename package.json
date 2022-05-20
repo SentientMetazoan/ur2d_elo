@@ -13,6 +13,14 @@
   "author": "Urist",
   "license": "UNLICENSED",
   "devDependencies": {
-    "electron": "^17.1.2"
+    "electron": "^17.4.5"
+  },
+  "dependencies": {
+    "express": "^4.18.1",
+    "mysql": "^2.18.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/sentientmetazoan/ur2d_elo.git"
   }
 }
