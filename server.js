@@ -8,7 +8,7 @@ var connection = mysql.createConnection({
     password: '',
     database: 'ur2d_elo'
 });
-var app = express();
+var server_app = express();
 
 connection.connect(function (err) {
     if (!err) {
@@ -17,4 +17,4 @@ connection.connect(function (err) {
         console.log("Error connecting database ... \n\n", err.message);
     }
 });
-app.listen(3000);
+server_app.listen(3000);

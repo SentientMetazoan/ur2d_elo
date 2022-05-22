@@ -1,6 +1,6 @@
 {
   "name": "ur2delo",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "Elo calculations for UR2D records",
   "main": "main.js",
   "scripts": {
@@ -10,7 +10,7 @@
   "keywords": [
     "elo"
   ],
-  "author": "Urist",
+  "author": "SentientMetazoan",
   "license": "UNLICENSED",
   "devDependencies": {
     "electron": "^17.4.5"

@@ -5,9 +5,53 @@ body {
   display: flex;
   flex-direction: column;
   color: white;
+  font-family: Ubuntu;
+}
+
+button {
+  background: transparent;
+  border: 0px solid black;
+  color:white;
 }
 
 .base {
   background: black;
   flex: 1;
+}
+
+.base-nav {
+  background: (10,10,10,0.5);
+}
+
+.navigation {
+  /*background: green;*/
+  display: inline-flex;
+}
+
+.navbtn{
+  margin:8px;
+  padding:8px;
+  display: block;
+  background-color: transparent;
+  border: 2px solid white;
+  border-bottom-left-radius: 20px;
+  border-top-right-radius: 20px;
+  color: white;
+}
+
+.navbtn > button {
+  font-size: large;
+  font-family: Ubuntu;
+  
+}
+
+.navbtn:hover {
+  /*color: paleturquoise;
+  border-color: paleturquoise;*/
+  background:rgba(50, 150, 180, 0.25)
+}
+
+.navbtn:active {
+  background:rgba(50, 150, 180, 0.25);
+  filter: invert(100%)
 }
