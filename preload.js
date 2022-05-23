@@ -1,4 +1,4 @@
-const { ipcRenderer } = require('electron')
+const { ipcRenderer, contextBridge } = require('electron')
 
 window.addEventListener('DOMContentLoaded', () => {
   console.log('DOM fully loaded and parsed');
@@ -7,3 +7,4 @@ window.addEventListener('DOMContentLoaded', () => {
     if (element) element.innerText = text
   }
 })
+
