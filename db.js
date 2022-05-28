@@ -8,6 +8,4 @@ const DB = createPool({
     connectionLimit: 10
 })
 
-
-
 module.exports = DB

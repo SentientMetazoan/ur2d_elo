@@ -3,6 +3,8 @@ const {
   BrowserWindow,
   ipcMain
 } = require('electron')
+const mysql = require('mysql')
+const { DB } = require('./db.js')
 const path = require('path')
 const fs = require('fs')
 
@@ -33,7 +35,6 @@ class Race {
     console.log("[Race] constructor: " + "starting // id = " + id)
     if (id instanceof Array) {
       console.log('\tis NaN!')
-      console.log("New thing working -><-")
       this.id = id[0]
       this.location = id[1]
       this.competition = id[2]
@@ -138,6 +139,57 @@ function getRace(id) {
     if (r.id == id)
       return r
   }
+}
+
+function init_server() {
+  var connection = mysql.createConnection({
+    host: 'localhost',
+    user: 'root',
+    password: '',
+    database: 'ur2d_elo'
+  });
+  console.log('Connection created')
+  connection.connect(function (err) {
+    if (err) throw err;
+    console.log("Connected!");
+    connection.query("USE ur2d_elo", function (err, result) {
+      if (err) throw err;
+      console.log("Using ur2d_elo database");
+    });
+    connection.query(`
+    DROP TABLE results;`, function (err, result) {
+      if (err) throw err;
+      console.log("Query successful! Result:\n");
+    });
+    connection.query(`
+    CREATE TABLE results (id INT NOT NULL PRIMARY KEY, quali INT NOT NULL , finish INT NOT NULL , fl BOOL);`, function (err, result) {
+      if (err) throw err;
+      console.log("Query successful! Result:\n");
+    });
+    connection.query(`
+    INSERT INTO results VALUES (0,1,2,1)`, function (err, result) {
+      if (err) throw err;
+      console.log("Query successful! Result:\n");
+    });
+    connection.query(`
+    INSERT INTO results VALUES (1,2,1,0)`, function (err, result) {
+      if (err) throw err;
+      console.log("Query successful! Result:\n");
+    });
+    connection.query(`
+    SELECT * FROM results`, function (err, result) {
+      if (err) throw err;
+      console.log("Query successful! Result:\n"+result);
+      print_rows(result)
+    });
+  });
+}
+
+// This will  print a database collection of rows to console
+// It tells you when it's done
+function print_rows(data , notify=true ){
+  for(let d of data) console.log(d)
+  if(notify) console.log('-- end of rows\n')
 }
 
 function init_info() {
@@ -289,15 +341,17 @@ function createWindow() {
     width: 800,
     height: 600,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js')
+      preload: [ path.join(__dirname, 'preload.js') , path.join(__dirname, 'preload.js') ]
     }
   })
 
   console.log("about to load file")
-
   win.loadFile('index.html')
   win.removeMenu()
-  init_info()
+
+  console.log("about to init_server")
+  init_server()
+  //init_info()
 }
 
 app.whenReady().then(() => {
@@ -328,8 +382,10 @@ ipcMain.on('request-data', (event, arg) => {
     }
     console.log('read file...')
     console.log("text contents: " + data)
+    console.log('----DONE----')
 
     event.returnValue = data
   })
+  console.log('request done!')
 
 })
