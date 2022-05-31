@@ -17,4 +17,4 @@ connection.connect(function (err) {
         console.log("Error connecting database ... \n\n", err.message);
     }
 });
-server_app.listen(3306);
+server_app.listen(3000);

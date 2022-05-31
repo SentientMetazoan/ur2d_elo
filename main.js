@@ -1,12 +1,21 @@
+//const { default: installExtension, REDUX_DEVTOOLS } = require('electron-devtools-installer');
+
 const {
   app,
   BrowserWindow,
-  ipcMain
+  ipcMain,
+  Menu
 } = require('electron')
 const mysql = require('mysql')
 const { DB } = require('./db.js')
 const path = require('path')
 const fs = require('fs')
+const { application } = require('express')
+const { resolve } = require('path')
+
+/**********************************
+ * DB stuff, perhaps move somewhere else
+ */
 
 const RACES = []
 const RESULTS = []
@@ -53,11 +62,11 @@ class Race {
       this.date = date
       this.results = []
     }
-    
+
   }
 
-  
-  setResults(r){ this.results = r;  }
+
+  setResults(r) { this.results = r; }
 }
 
 class Driver {
@@ -72,8 +81,8 @@ class Driver {
       "\nDriver name:\t" + this.name +
       "\nDriver flag:\t" + this.flag + "\n")
   }
-  
-  setResults(r){ this.results = r;  }
+
+  setResults(r) { this.results = r; }
 }
 
 class Team {
@@ -90,8 +99,8 @@ class Team {
       "\nTeam code:\t" + this.code +
       "\nTeam flag:\t" + this.flag + "\n")
   }
-  
-  setResults(r){ this.results = r;  }
+
+  setResults(r) { this.results = r; }
 }
 
 class Result {
@@ -141,56 +150,20 @@ function getRace(id) {
   }
 }
 
-function init_server() {
-  var connection = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: '',
-    database: 'ur2d_elo'
-  });
-  console.log('Connection created')
-  connection.connect(function (err) {
-    if (err) throw err;
-    console.log("Connected!");
-    connection.query("USE ur2d_elo", function (err, result) {
-      if (err) throw err;
-      console.log("Using ur2d_elo database");
-    });
-    connection.query(`
-    DROP TABLE results;`, function (err, result) {
-      if (err) throw err;
-      console.log("Query successful! Result:\n");
-    });
-    connection.query(`
-    CREATE TABLE results (id INT NOT NULL PRIMARY KEY, quali INT NOT NULL , finish INT NOT NULL , fl BOOL);`, function (err, result) {
-      if (err) throw err;
-      console.log("Query successful! Result:\n");
-    });
-    connection.query(`
-    INSERT INTO results VALUES (0,1,2,1)`, function (err, result) {
-      if (err) throw err;
-      console.log("Query successful! Result:\n");
-    });
-    connection.query(`
-    INSERT INTO results VALUES (1,2,1,0)`, function (err, result) {
-      if (err) throw err;
-      console.log("Query successful! Result:\n");
-    });
-    connection.query(`
-    SELECT * FROM results`, function (err, result) {
-      if (err) throw err;
-      console.log("Query successful! Result:\n"+result);
-      print_rows(result)
-    });
-  });
+
+
+/**
+ * This will  print a database collection of rows to console
+ * It tells you when it's done
+ */
+function print_rows(data, notify = true) {
+  for (let d of data) console.log(d)
+  if (notify) console.log('-- end of rows\n')
 }
 
-// This will  print a database collection of rows to console
-// It tells you when it's done
-function print_rows(data , notify=true ){
-  for(let d of data) console.log(d)
-  if(notify) console.log('-- end of rows\n')
-}
+/**********************************
+ * initialisation stuff
+ */
 
 function init_info() {
 
@@ -226,7 +199,7 @@ function init_info() {
 
   console.log("Initialisation complete")
   init_info_debugPrint()
-  
+
 }
 
 function init_info_drivers(data) {
@@ -294,20 +267,20 @@ function init_info_results(data) {
         let new_result = new Result(race, d_id, t_id, quali, finish, fl)
 
         RESULTS.push(new_result)
-        if(race.results == undefined)
+        if (race.results == undefined)
           race.results = []
         race.results.push(new_result)
         getDriver(d_id).results.push(new_result)
         if (t_id >= 0) getTeam(t_id).results.push(new_result)
       }
-      
+
     }
     else ignored_first = true
 
   }
 }
 
-function init_info_debugPrint(){
+function init_info_debugPrint() {
   console.log('debugprint--------')
   for (let r of RACES) {
     console.log("Race #" + r.id + " - " + r.location)
@@ -335,34 +308,129 @@ function init_info_debugPrint(){
   }
 }
 
+/**
+ * Server, might be used later
+ */
 
+ function init_server() {
+  var connection = mysql.createConnection({
+    host: 'localhost',
+    user: 'root',
+    password: '',
+    database: 'ur2d_elo'
+  });
+  console.log('Connection created')
+  connection.connect(function (err) {
+    if (err) throw err;
+    console.log("Connected!");
+    connection.query("USE ur2d_elo", function (err, result) {
+      if (err) throw err;
+      console.log("Using ur2d_elo database");
+    });
+    connection.query(`
+    DROP TABLE results;`, function (err, result) {
+      if (err) throw err;
+      console.log("Query successful! Result:\n");
+    });
+
+  });
+}
+
+/******************************************
+ * Menu
+ */
+const menuTemplate = [
+  {
+    label: "File",
+    submenu: [
+      {
+        label: "Test",
+      },
+      {
+        type: "separator",
+      },
+      {
+        label: "Exit",
+        click: () => app.quit(),
+      },
+    ],
+  },
+  {
+    label: "Tables",
+    submenu: [
+      {
+        label: "Teams",
+        click: () => BrowserWindow.getAllWindows()[0].loadFile('team.html'),
+      },
+      {
+        label: "Drivers",
+        click: () => BrowserWindow.getAllWindows()[0].loadFile('drivers.html'),
+      },
+      {
+        label: "Competitions",
+        click: () => BrowserWindow.getAllWindows()[0].loadFile('comps.html'),
+      },
+      {
+        label: "Races",
+        click: () => BrowserWindow.getAllWindows()[0].loadFile('races.html'),
+      },
+    ],
+  },
+  {
+    label: "Minimise",
+    role: "minimize"
+  },
+  {
+    label: "Exit",
+    role: "close"
+  }
+];
+
+const menu = Menu.buildFromTemplate(menuTemplate)
+Menu.setApplicationMenu(menu)
+
+/******************************************
+ * Creates a window, initialised with preload.
+ */
 function createWindow() {
   const win = new BrowserWindow({
     width: 800,
     height: 600,
     webPreferences: {
-      preload: [ path.join(__dirname, 'preload.js') , path.join(__dirname, 'preload.js') ]
+      nodeIntegration: false,
+      contextIsolation: true,
+      preload: path.join(__dirname, 'preload.js')
     }
   })
 
-  console.log("about to load file")
-  win.loadFile('index.html')
-  win.removeMenu()
-
-  console.log("about to init_server")
-  init_server()
-  //init_info()
+  return win
 }
 
+
+/*************************************
+ * APP INIT
+ * 
+ * Creates the window when the app is ready
+ * Loads index.html and initialises info
+ */
 app.whenReady().then(() => {
-  createWindow()
+  let win = createWindow()
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow()
+      win = createWindow()
     }
   })
 
+  console.log("about to load index")
+  win.loadFile('index.html')
+    .then( (event) => console.log('index.html loaded!'))
+    .catch( (err) => console.log('index.html failed loading. Error:',err) )
+  //win.removeMenu()
+
+  //console.log("about to init_server")
+  //init_server()
+  //init_info()
 })
 
 app.on('window-all-closed', () => {
@@ -370,6 +438,11 @@ app.on('window-all-closed', () => {
     app.quit()
   }
 })
+
+
+/************
+ * IPC MAIN *
+ ************/
 
 ipcMain.on('request-data', (event, arg) => {
 
@@ -389,3 +462,51 @@ ipcMain.on('request-data', (event, arg) => {
   console.log('request done!')
 
 })
+
+/**
+ * Basic logging for the renderer process
+ */
+ipcMain.on('print-message', (event, arg) => {
+  console.log(arg)
+})
+
+ipcMain.handle('page-loaded', (event, args) => {
+  console.log('[ipcMain] page-loaded event fired: '+args)
+  event.sender.send('page-loaded','main knows page is loaded')
+  event.returnValue = "PAGE WAS LOADED"
+  return 'PAGE WAS LOADED'
+})
+
+// print the frames
+ipcMain.handle('init-frames', (event, args) => {
+  let result = []
+
+  for (let arg of args) {
+    result.push({
+      id: arg['id'],
+      html: fs.readFileSync(path.join(__dirname, './' + arg['file_path']), 'utf-8', (err, data) => {
+        if (err) {
+          console.log("An error ocurred reading the file :" + err.message);
+          return;
+        }
+        console.log("Finished reading file: ",arg['file_path'])
+        console.log("data is:",data)
+        return data;
+      })
+    })
+  }
+  //console.log("result=",result)
+  event.sender.send('init-frames',result)
+  return result
+})
+
+
+
+//DevTools stuff, not working
+/* app.whenReady().then(async () => {
+  await installExtension(REDUX_DEVTOOLS)
+    .then((name) => console.log(`Added Extension:  ${name}`))
+    .catch((err) => console.log('An error occurred: ', err));
+  
+
+}) */
