@@ -11,12 +11,17 @@ const { DB } = require('./db.js')
 const path = require('path')
 const fs = require('fs')
 const { application } = require('express')
-const { resolve } = require('path')
 
 /**********************************
  * DB stuff, perhaps move somewhere else
  */
 
+const CONFIG = {
+  host:'localhost',
+  user:'root',
+  password:'',
+  database:'ur2d_elo'
+}
 const RACES = []
 const RESULTS = []
 const DRIVERS = []
@@ -160,6 +165,8 @@ function print_rows(data, notify = true) {
   for (let d of data) console.log(d)
   if (notify) console.log('-- end of rows\n')
 }
+
+
 
 /**********************************
  * initialisation stuff
@@ -308,11 +315,54 @@ function init_info_debugPrint() {
   }
 }
 
+
+/**
+ * Parses the driver list from drivers.csv, deletes any created drivers table, creates a new table, then adds the info to it
+ */
+function init_drivers_table(){
+  let connection = mysql.createConnection(CONFIG);
+  let drivers = []
+  let raw = fs.readFileSync(path.join(__dirname, "drivers.csv"), 'utf-8')
+  raw = raw.split('\r').slice(1)
+  console.log('Raw driver info: '+raw)
+
+  for(let d of raw){
+    let vals = d.split(',')
+    let driver = {
+      id: vals[0],
+      name: vals[1],
+      flag: vals[2]
+    }
+    drivers.push(driver)
+  }
+
+  connection.connect( err => {
+    connection.query('USE ur2d_elo;')
+    connection.query(`DROP TABLE drivers;`)
+    connection.query(
+    `CREATE TABLE drivers (
+      id int NOT NULL AUTO_INCREMENT,
+      name varchar(255) NOT NULL,
+      flag char(3),
+      PRIMARY KEY (id)
+    );`)
+    
+    for(let d of drivers){
+      console.log(`Adding driver: ${d.name} (${d.flag})`)
+      let sql = `INSERT INTO drivers (name, flag) VALUES ("${d.name}", "${d.flag}");`
+      console.log(sql)
+      connection.query(sql)
+    }
+  })
+}
+
+
+
 /**
  * Server, might be used later
  */
 
- function init_server() {
+function init_server() {
   var connection = mysql.createConnection({
     host: 'localhost',
     user: 'root',
@@ -335,6 +385,8 @@ function init_info_debugPrint() {
 
   });
 }
+
+
 
 /******************************************
  * Menu
@@ -389,6 +441,8 @@ const menuTemplate = [
 const menu = Menu.buildFromTemplate(menuTemplate)
 Menu.setApplicationMenu(menu)
 
+
+
 /******************************************
  * Creates a window, initialised with preload.
  */
@@ -422,6 +476,8 @@ app.whenReady().then(() => {
     }
   })
 
+  init_drivers_table();
+
   console.log("about to load index")
   win.loadFile('index.html')
     .then( (event) => console.log('index.html loaded!'))
@@ -431,6 +487,7 @@ app.whenReady().then(() => {
   //console.log("about to init_server")
   //init_server()
   //init_info()
+  
 })
 
 app.on('window-all-closed', () => {
@@ -463,6 +520,8 @@ ipcMain.on('request-data', (event, arg) => {
 
 })
 
+
+
 /**
  * Basic logging for the renderer process
  */
@@ -473,9 +532,9 @@ ipcMain.on('print-message', (event, arg) => {
 ipcMain.handle('page-loaded', (event, args) => {
   console.log('[ipcMain] page-loaded event fired: '+args)
   event.sender.send('page-loaded','main knows page is loaded')
-  event.returnValue = "PAGE WAS LOADED"
   return 'PAGE WAS LOADED'
 })
+
 
 // print the frames
 ipcMain.handle('init-frames', (event, args) => {
@@ -496,8 +555,57 @@ ipcMain.handle('init-frames', (event, args) => {
     })
   }
   //console.log("result=",result)
-  event.sender.send('init-frames',result)
+  //event.sender.send('init-frames',result)
   return result
+})
+
+
+/**
+ * Query the database
+ */
+ipcMain.handle('query', (event, args) => {
+  let arg = args
+  let connection = mysql.createConnection({
+    host: 'localhost',
+    user: 'root',
+    password: '',
+    database: 'ur2d_elo'
+  });
+
+  console.log('Database connection created')
+  connection.connect(function (err) {
+    let res = []
+    if (err) throw err;
+    console.log("--- Connected ---");
+    connection.query("USE ur2d_elo;", function (err, result) {
+      if (err) throw err;
+      console.log("Using ur2d_elo database");
+    });
+
+    connection.query("" + arg.query, function (err, result) {
+      if (err) throw err;
+      console.log(`Performed query: ${arg.query}`);
+      for (let r of result)
+        res.push(JSON.stringify(r))
+
+      connection.end(function (err) {
+        if (err) throw err;
+        console.log('--- Ended connection ---')
+        event.sender.send(arg.channel, res)
+        return res;
+      })
+    });
+
+    /* connection.end((err) => {
+      if (err) throw err;
+      console.log('ending connection...')
+    })
+
+    console.log('Returning query result')
+    return res; */
+  });
+
+  
 })
 
 
